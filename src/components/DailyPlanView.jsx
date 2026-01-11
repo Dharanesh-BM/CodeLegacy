@@ -4,9 +4,10 @@ import { db } from '../firebase';
 import { collection, query, where, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { format, addDays, subDays } from 'date-fns';
-import { ChevronLeft, ChevronRight, Soup, UtensilsCrossed, Check, Plus, X, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Soup, UtensilsCrossed, Check, Plus, X, Trash2, ShoppingCart } from 'lucide-react';
 import MealSection from './MealSection';
 import { addMealToCalendar, deleteMealFromCalendar } from '../services/calendarService';
+import IngredientModal from './IngredientModal';
 
 export default function DailyPlanView({ date, title, showDateNav = false, onDateChange, readOnly = false }) {
   // Use local date formatting to avoid timezone shifts
@@ -27,6 +28,9 @@ export default function DailyPlanView({ date, title, showDateNav = false, onDate
   
   const [modalOpen, setModalOpen] = useState(false);
   const [activeMealType, setActiveMealType] = useState(null);
+  
+  // Ingredient Modal State
+  const [ingredientModalData, setIngredientModalData] = useState(null);
 
   // Foods Ref (for Modal)
   const foodsRef = (currentUser && activeMealType) ? query(
@@ -50,6 +54,15 @@ export default function DailyPlanView({ date, title, showDateNav = false, onDate
     setModalOpen(true);
   };
 
+  const openIngredientModal = (e, item) => {
+    e.stopPropagation();
+    setIngredientModalData({
+        isOpen: true,
+        ingredients: item.ingredients || [],
+        mealName: item.name
+    });
+  };
+
   const addToPlan = async (food) => {
     if (!currentUser) return;
     
@@ -67,6 +80,7 @@ export default function DailyPlanView({ date, title, showDateNav = false, onDate
       mealType: activeMealType,
       foodId: food.id,
       name: food.name,
+      ingredients: food.ingredients || [],
       isCompleted: false,
       googleEventId: googleEventId || null // Store ID if we got one
     });
@@ -85,17 +99,14 @@ export default function DailyPlanView({ date, title, showDateNav = false, onDate
       e.stopPropagation();
       if (!currentUser) return;
       
-      if(window.confirm('Remove this meal?')) {
-          // Find the plan to get the googleEventId
-          const planToDelete = plans.find(p => p.id === id);
-          if (planToDelete && planToDelete.googleEventId) {
-             // Delete from Google Calendar
-             // We don't await this to block UI, but it's good practice to try
-             deleteMealFromCalendar(planToDelete.googleEventId);
-          }
-
-          await deleteDoc(doc(db, 'users', currentUser.uid, 'plans', id));
+      // Find the plan to get the googleEventId
+      const planToDelete = plans.find(p => p.id === id);
+      if (planToDelete && planToDelete.googleEventId) {
+          // Delete from Google Calendar
+          deleteMealFromCalendar(planToDelete.googleEventId);
       }
+
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'plans', id));
   }
 
   if (plansLoading) return <div className="p-4 text-center text-gray-400">Loading plan...</div>;
@@ -165,13 +176,24 @@ export default function DailyPlanView({ date, title, showDateNav = false, onDate
                                       </span>
                                    </div>
                                    
-                                   <button 
-                                      onClick={(e) => deletePlan(e, item.id)}
-                                      className="text-gray-400 hover:text-red-500 p-2 rounded-full active:bg-red-50 active:text-red-500 transition-colors"
-                                      aria-label="Delete meal"
-                                   >
-                                      <Trash2 size={18} />
-                                   </button>
+                                   <div className="flex items-center gap-1">
+                                        {item.ingredients && item.ingredients.length > 0 && (
+                                            <button 
+                                                onClick={(e) => openIngredientModal(e, item)}
+                                                className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                                                title="Add ingredients to text-tasks"
+                                            >
+                                                <ShoppingCart size={18} />
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={(e) => deletePlan(e, item.id)}
+                                            className="text-gray-400 hover:text-red-500 p-2 rounded-full active:bg-red-50 active:text-red-500 transition-colors"
+                                            aria-label="Delete meal"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                   </div>
                                 </div>
                             ))}
                         </div>
@@ -224,6 +246,16 @@ export default function DailyPlanView({ date, title, showDateNav = false, onDate
             </div>
           </div>
         </div>
+      )}
+
+      {/* Ingredient Modal */}
+      {ingredientModalData && (
+        <IngredientModal 
+            isOpen={ingredientModalData.isOpen}
+            onClose={() => setIngredientModalData(null)}
+            ingredients={ingredientModalData.ingredients}
+            mealName={ingredientModalData.mealName}
+        />
       )}
 
     </div>

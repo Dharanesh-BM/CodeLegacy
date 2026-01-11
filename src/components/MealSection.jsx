@@ -27,7 +27,7 @@ export default function MealSection({ title, count, children, onAdd, showAddButt
     <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4`}>
        {/* Left Border Wrapper */}
       <div className={`flex border-l-4 ${color}`}>
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-4 min-w-0">
           <div className="flex justify-between items-center mb-3">
              <div className="flex items-center gap-2">
                 <Icon size={20} className={iconColor} />

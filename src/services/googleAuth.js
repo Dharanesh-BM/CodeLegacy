@@ -1,6 +1,6 @@
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "1066058503322-9g600hvh6215r64d5k0721245465.apps.googleusercontent.com"; // Fallback or Env variable
-const SCOPES = "https://www.googleapis.com/auth/calendar.events";
+const SCOPES = "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/tasks";
 
 let tokenClient;
 let accessToken = null;
