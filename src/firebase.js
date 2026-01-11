@@ -3,12 +3,12 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB6qSYDtUSee0kwEZod0b9ShK2je-U08wo",
-  authDomain: "smartmeal-ai-15d32.firebaseapp.com",
-  projectId: "smartmeal-ai-15d32",
-  storageBucket: "smartmeal-ai-15d32.firebasestorage.app",
-  messagingSenderId: "1066058503322",
-  appId: "1:1066058503322:web:1a5f2691a24201ccb53b23"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);

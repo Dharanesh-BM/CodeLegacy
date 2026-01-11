@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
-import { collection, addDoc, deleteDoc, doc, query } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, updateDoc, doc, query } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { Trash2, Plus, Soup, UtensilsCrossed } from 'lucide-react';
+import { Trash2, Plus, Soup, UtensilsCrossed, Check, X, Pencil } from 'lucide-react';
 import MealSection from '../components/MealSection';
 
 export default function PantryPage() {
   const [name, setName] = useState('');
   const [mealType, setMealType] = useState('Breakfast');
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editMealType, setEditMealType] = useState('');
   const { currentUser } = useAuth();
 
   // Firestore Hook
@@ -44,6 +47,31 @@ export default function PantryPage() {
     } catch (err) {
         console.error("Error deleting food:", err);
     }
+  };
+
+  const startEdit = (food) => {
+    setEditingId(food.id);
+    setEditName(food.name);
+    setEditMealType(food.mealType);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditMealType('');
+  };
+
+  const saveEdit = async () => {
+     if (!currentUser || !editingId || !editName.trim()) return;
+     try {
+         await updateDoc(doc(db, 'users', currentUser.uid, 'foods', editingId), {
+             name: editName.trim(),
+             mealType: editMealType
+         });
+         setEditingId(null);
+     } catch(err) {
+         console.error("Error updating food:", err);
+     }
   };
 
   const mealTypes = ['Pre-Breakfast', 'Breakfast', 'Mid-morning Snacks', 'Lunch', 'Dinner'];
@@ -107,17 +135,44 @@ export default function PantryPage() {
              items.length > 0 && (
               <MealSection key={type} title={type} count={items.length}>
                 {items.map(food => (
-                  <div key={food.id} className="flex justify-between items-center group">
-                    <div className="flex items-center gap-3">
-                      <UtensilsCrossed size={16} className="text-gray-400" />
-                      <span className="text-gray-700 font-medium">{food.name}</span>
-                    </div>
-                    <button
-                      onClick={() => deleteFood(food.id)}
-                      className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                  <div key={food.id} className="group">
+                    {editingId === food.id ? (
+                      <div className="flex items-center gap-2 w-full">
+                        <input 
+                          type="text" 
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="flex-1 bg-gray-50 border border-blue-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          autoFocus
+                        />
+                        <button onClick={saveEdit} className="text-green-500 hover:text-green-700 p-1">
+                          <Check size={18} />
+                        </button>
+                        <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600 p-1">
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <div 
+                          className="flex items-center gap-3 flex-1 cursor-pointer"
+                          onClick={() => startEdit(food)}
+                        >
+                          <UtensilsCrossed size={16} className="text-gray-400" />
+                          <span className="text-gray-700 font-medium group-hover:text-blue-600 transition-colors">{food.name}</span>
+                          <Pencil size={12} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteFood(food.id);
+                          }}
+                          className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </MealSection>
