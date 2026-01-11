@@ -6,9 +6,11 @@ import { useCollection } from 'react-firebase-hooks/firestore';
 import { format, addDays, subDays } from 'date-fns';
 import { ChevronLeft, ChevronRight, Soup, UtensilsCrossed, Check, Plus, X, Trash2 } from 'lucide-react';
 import MealSection from './MealSection';
+import { addMealToCalendar, deleteMealFromCalendar } from '../services/calendarService';
 
 export default function DailyPlanView({ date, title, showDateNav = false, onDateChange, readOnly = false }) {
-  const dateString = date.toISOString().split('T')[0];
+  // Use local date formatting to avoid timezone shifts
+  const dateString = format(date, 'yyyy-MM-dd');
   const { currentUser } = useAuth();
   
   // Plans Ref
@@ -50,13 +52,25 @@ export default function DailyPlanView({ date, title, showDateNav = false, onDate
 
   const addToPlan = async (food) => {
     if (!currentUser) return;
+    
+    // 1. Add to Google Calendar and get ID
+    const googleEventId = await addMealToCalendar({
+        date: dateString,
+        mealType: activeMealType,
+        name: food.name,
+        foodName: food.name
+    });
+
+    // 2. Add to Firestore Plan with eventId
     await addDoc(collection(db, 'users', currentUser.uid, 'plans'), {
       date: dateString,
       mealType: activeMealType,
       foodId: food.id,
       name: food.name,
-      isCompleted: false
+      isCompleted: false,
+      googleEventId: googleEventId || null // Store ID if we got one
     });
+
     setModalOpen(false);
   };
 
@@ -70,7 +84,16 @@ export default function DailyPlanView({ date, title, showDateNav = false, onDate
   const deletePlan = async (e, id) => {
       e.stopPropagation();
       if (!currentUser) return;
+      
       if(window.confirm('Remove this meal?')) {
+          // Find the plan to get the googleEventId
+          const planToDelete = plans.find(p => p.id === id);
+          if (planToDelete && planToDelete.googleEventId) {
+             // Delete from Google Calendar
+             // We don't await this to block UI, but it's good practice to try
+             deleteMealFromCalendar(planToDelete.googleEventId);
+          }
+
           await deleteDoc(doc(db, 'users', currentUser.uid, 'plans', id));
       }
   }

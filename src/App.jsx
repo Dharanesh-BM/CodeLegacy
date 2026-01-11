@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { initGoogleClient } from './services/googleAuth';
 import Layout from './components/Layout';
 import TodayPage from './pages/TodayPage';
 import PlannerPage from './pages/PlannerPage';
@@ -20,6 +21,10 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  useEffect(() => {
+    initGoogleClient();
+  }, []);
+
   return (
     <AuthProvider>
       <BrowserRouter>
