@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { CheckSquare, Calendar, UtensilsCrossed, LogOut, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ChatAgent from './ChatAgent';
 
 export default function Layout() {
   const { currentUser, logout } = useAuth();
@@ -69,6 +70,8 @@ export default function Layout() {
           ))}
         </ul>
       </nav>
+      
+      <ChatAgent />
     </div>
   );
 }
